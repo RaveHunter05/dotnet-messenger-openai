@@ -1,0 +1,63 @@
+## Archivos de compilación
+bin/
+obj/
+out/
+
+## Archivos de usuario y configuración local
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Archivos de dependencias y paquetes
+*.nupkg
+*.snupkg
+*.nuspec
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+
+## Carpetas de paquetes
+packages/
+*.nuget/
+
+# Evitar el lock si quieres (recomendado ignorarlo en repos pequeños)
+project.lock.json
+project.fragment.lock.json
+
+# Artifacts de VS
+.vs/
+.vscode/
+.idea/
+
+## Archivos de configuración local
+launchSettings.json
+appsettings.Development.json
+appsettings.Local.json
+
+## Archivos generados por cobertura / testing
+*.coverage
+*.coveragexml
+TestResult.xml
+TestResults/
+coverage*.json
+coverage*.xml
+coverage*.info
+lcov.info
+
+## Archivos temporales
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+## Docker
+docker-compose.override.yml
+.docker/
+
+## env
+
+.env
