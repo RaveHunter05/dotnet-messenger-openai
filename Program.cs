@@ -17,8 +17,11 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer(); // Required for API Explorer
 builder.Services.AddSwaggerGen(); // Adds Swagger generation services
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("connection"))
+           .LogTo(Console.WriteLine, LogLevel.Information)
+);
 
 builder.Services.AddScoped<OpenAIService>();
 
