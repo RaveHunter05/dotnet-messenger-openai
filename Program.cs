@@ -23,7 +23,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
            .LogTo(Console.WriteLine, LogLevel.Information)
 );
 
+// Services from this project
 builder.Services.AddScoped<OpenAIService>();
+builder.Services.AddScoped<EmbeddingService>();
 
 var app = builder.Build();
 
