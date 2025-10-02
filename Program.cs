@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using bot_messenger.Services;
+using bot_messenger.Context;
 
 using dotenv.net;
 
@@ -24,8 +25,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 // Services from this project
-builder.Services.AddScoped<OpenAIService>();
-builder.Services.AddScoped<EmbeddingService>();
+builder.Services.AddScoped<IOpenAIService, OpenAIService>();
+builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 var app = builder.Build();
 

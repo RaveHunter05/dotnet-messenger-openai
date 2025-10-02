@@ -2,7 +2,7 @@ using OpenAI.Chat;
 
 namespace bot_messenger.Services
 {
-    public class OpenAIService
+    public class OpenAIService : IOpenAIService
     {
 
         private readonly ChatClient _chatClient;
