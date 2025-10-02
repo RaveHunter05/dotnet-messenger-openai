@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using bot_messenger.Context;
 using bot_messenger.Models;
 
+using Pgvector;
+
 namespace bot_messenger.Services
 {
     public class EmbeddingService : IEmbeddingService
@@ -52,13 +54,18 @@ namespace bot_messenger.Services
         public async Task<List<DocumentEmbedding>> FindSimilarDocumentsAsync(string query, int limit = 5)
         {
             // Generar embedding para la consulta
-            var queryEmbedding = await GenerateEmbeddingAsync(query);
+            var queryEmbeddingArr = await GenerateEmbeddingAsync(query);
+
+            var queryEmbedding = new Vector(queryEmbeddingArr);
 
             // Usar SQL raw para búsqueda vectorial
             var connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-            using var connection = new NpgsqlConnection(connectionString);
-            await connection.OpenAsync();
+            var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+            dataSourceBuilder.UseVector();
+            await using var dataSource = dataSourceBuilder.Build();
+
+            var connection = await dataSource.OpenConnectionAsync();
 
             var sql = @"
             SELECT id, content, metadata, created_at,
@@ -69,8 +76,8 @@ namespace bot_messenger.Services
 
             var results = new List<DocumentEmbedding>();
 
-            using var command = new NpgsqlCommand(sql, connection);
-            command.Parameters.AddWithValue("queryEmbedding", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Real, queryEmbedding);
+            using var command = new NpgsqlCommand(sql, connection); 
+	    command.Parameters.AddWithValue("queryEmbedding", queryEmbedding);
             command.Parameters.AddWithValue("limit", limit);
 
             using var reader = await command.ExecuteReaderAsync();
