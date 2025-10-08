@@ -3,6 +3,7 @@ namespace bot_messenger.Services;
 using System.Text;
 using bot_messenger.Context;
 using Npgsql;
+using Pgvector;
 
 // Services/GenericSearchService.cs
 public class GenericSearchService
@@ -28,14 +29,18 @@ public class GenericSearchService
         Dictionary<string, object> filters = null
     )
     {
-        var queryEmbedding = await _embeddingService.GenerateEmbeddingAsync(query);
+        var queryEmbeddingArr = await _embeddingService.GenerateEmbeddingAsync(query);
+        var queryEmbedding = new Vector(queryEmbeddingArr);
+
         var connectionString = _configuration.GetConnectionString("DefaultConnection");
 
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
         dataSourceBuilder.UseVector();
+
         await using var dataSource = dataSourceBuilder.Build();
 
         var connection = await dataSource.OpenConnectionAsync();
+
         var sql = new StringBuilder(
             @"
             SELECT 
@@ -48,42 +53,33 @@ public class GenericSearchService
             WHERE 1=1"
         );
 
-        var parameters = new List<NpgsqlParameter>
-        {
-            new NpgsqlParameter(
-                "queryEmbedding",
-                NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Real
-            )
-            {
-                Value = queryEmbedding,
-            },
-        };
+        var results = new List<VectorSearchResult>();
 
-        // Filtro por tipo de entidad
-        if (!string.IsNullOrEmpty(entityType))
-        {
-            sql.Append(" AND metadata->>'EntityType' = @entityType");
-            parameters.Add(new NpgsqlParameter("entityType", entityType));
-        }
-
-        // Filtros adicionales en metadatos
-        if (filters != null)
-        {
-            foreach (var filter in filters)
-            {
-                var paramName = $"filter_{filter.Key}";
-                sql.Append($" AND metadata->>'{filter.Key}' = @{paramName}");
-                parameters.Add(new NpgsqlParameter(paramName, filter.Value?.ToString()));
-            }
-        }
+	// @TODO: add this to the command
+        /* if (!string.IsNullOrEmpty(entityType))
+         {
+             sql.Append(" AND metadata->>'EntityType' = @entityType");
+             command.Parameters.Add(new NpgsqlParameter("entityType", entityType));
+         }
+ 
+         // Filtros adicionales en metadatos
+         if (filters != null)
+         {
+             foreach (var filter in filters)
+             {
+                 var paramName = $"filter_{filter.Key}";
+                 sql.Append($" AND metadata->>'{filter.Key}' = @{paramName}");
+                 command.Parameters.Add(new NpgsqlParameter(paramName, filter.Value?.ToString()));
+             }
+         }
+     */
 
         sql.Append(" ORDER BY embedding <=> @queryEmbedding LIMIT 10");
 
-        using var command = connection.CreateCommand();
-        command.CommandText = sql.ToString();
-        command.Parameters.AddRange(parameters.ToArray());
+        using var command = new NpgsqlCommand(sql.ToString(), connection);
 
-        var results = new List<VectorSearchResult>();
+        command.Parameters.AddWithValue("queryEmbedding", queryEmbedding);
+
         using var reader = await command.ExecuteReaderAsync();
 
         while (await reader.ReadAsync())
